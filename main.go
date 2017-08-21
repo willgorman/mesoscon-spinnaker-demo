@@ -1,20 +1,28 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"os/signal"
-	"syscall"
-	"context"
-	"time"
 	"strconv"
+	"strings"
+	"syscall"
+	"time"
 )
+
+func (s *Server) index(w http.ResponseWriter, r *http.Request) {
+	s.logger.Println("GET /")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+	w.Write([]byte("<p style=\"font-size:96px\">Hello, World!</p>"))
+}
 
 func envDefault(variable string, defaultVal string) int {
 	delayVal := os.Getenv(variable)
-	if (delayVal == "") {
+	if delayVal == "" {
 		delayVal = defaultVal
 	}
 
@@ -23,15 +31,15 @@ func envDefault(variable string, defaultVal string) int {
 }
 
 type Server struct {
-	logger *log.Logger
-	mux    *http.ServeMux
+	logger  *log.Logger
+	mux     *http.ServeMux
 	healthy bool
 }
 
 func NewServer(options ...func(*Server)) *Server {
 	s := &Server{
-		logger: log.New(os.Stdout, "", 0),
-		mux:    http.NewServeMux(),
+		logger:  log.New(os.Stdout, "", 0),
+		mux:     http.NewServeMux(),
 		healthy: true,
 	}
 
@@ -51,15 +59,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
 }
 
-func (s *Server) index(w http.ResponseWriter, r *http.Request) {
-	s.logger.Println("GET /")
-
-	w.Write([]byte("<p style=\"font-size:96px\">Hello, World!</p>"))
-}
-
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 	s.logger.Println("GET /")
-	if (!s.healthy) {
+	if !s.healthy {
 		http.Error(w, "Not healthy", 500)
 		return
 	}
@@ -68,7 +70,7 @@ func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) fail(w http.ResponseWriter, r *http.Request) {
 	s.logger.Println("GET /")
-	s.healthy = false;
+	s.healthy = false
 	w.Write([]byte("oh no!"))
 }
 
@@ -81,7 +83,6 @@ func (s *Server) env(w http.ResponseWriter, r *http.Request) {
 func main() {
 	stop := make(chan os.Signal, 1)
 
-
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	addr := ":" + os.Getenv("PORT")
@@ -92,7 +93,7 @@ func main() {
 	delay := envDefault("DELAY", "0")
 	startupDelay := envDefault("STARTUP_DELAY", "0")
 
-	time.Sleep(time.Duration(startupDelay)*time.Second)
+	time.Sleep(time.Duration(startupDelay) * time.Second)
 
 	logger := log.New(os.Stdout, "", 0)
 	s := NewServer(func(s *Server) { s.logger = logger })
@@ -109,13 +110,12 @@ func main() {
 
 	sig := <-stop
 
-
 	logger.Println("\nShutting down the server...")
 	logger.Println(sig)
 
 	h.Shutdown(context.Background())
 
-	time.Sleep(time.Duration(delay)*time.Second)
+	time.Sleep(time.Duration(delay) * time.Second)
 	logger.Println("Server gracefully stopped")
 }
 
