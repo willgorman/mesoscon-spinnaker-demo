@@ -17,7 +17,7 @@ func (s *Server) index(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Expires", "0")
-	w.Write([]byte("<p style=\"font-size:96px\">Hello, World!</p>"))
+	w.Write([]byte("<p style=\"font-size:96px\">Hello, Demo!</p>"))
 }
 
 func envDefault(variable string, defaultVal string) int {
